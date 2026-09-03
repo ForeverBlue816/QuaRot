@@ -11,6 +11,18 @@ torch.backends.cuda.matmul.allow_tf32 = False
 torch.backends.cudnn.allow_tf32 = False
 
 
+def _trim_replay_inputs(attention_mask, position_ids, sequence_length):
+    """Match cached Transformers inputs to the GPTQ replay sequence length."""
+    if attention_mask is not None:
+        if attention_mask.ndim == 4:
+            attention_mask = attention_mask[..., :sequence_length, :sequence_length]
+        elif attention_mask.ndim == 2:
+            attention_mask = attention_mask[..., :sequence_length]
+    if position_ids is not None:
+        position_ids = position_ids[..., :sequence_length]
+    return attention_mask, position_ids
+
+
 class GPTQ:
 
     def __init__(self, layer):
@@ -184,6 +196,9 @@ def gptq_fwrd(model, dataloader, dev, args):
     outs = torch.zeros_like(inps)
     attention_mask = cache['attention_mask']
     position_ids = cache['position_ids']
+    attention_mask, position_ids = _trim_replay_inputs(
+        attention_mask, position_ids, model.seqlen
+    )
 
     quantizers = {}
     sequential = [
