@@ -370,7 +370,13 @@ def add_actquant(module, name='', layers=[torch.nn.Linear,
     if isinstance(module, ActQuantWrapper):
         return
     for attr in dir(module):
-        tmp = getattr(module, attr)
+        # Newer Transformers releases can leave lazily removed rotary-cache
+        # names in ``dir(module)`` even though attribute lookup raises.  These
+        # are not child modules and should be ignored by the wrapper traversal.
+        try:
+            tmp = getattr(module, attr)
+        except AttributeError:
+            continue
         if type(tmp) in layers:
             setattr(module, attr, ActQuantWrapper(tmp))
         if type(tmp) == torch.nn.Sequential:
