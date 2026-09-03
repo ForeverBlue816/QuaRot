@@ -53,7 +53,10 @@ def main():
             assert args.rotate, "Model should be rotated to load a quantized model!"
             assert not args.save_qmodel_path, "Cannot save a quantized model if it is already loaded!"
             print("Load quantized model from ", args.load_qmodel_path)
-            save_dict = torch.load(args.load_qmodel_path)
+            # QuaRot checkpoints include WeightQuantizer instances. PyTorch
+            # 2.6+ defaults to weights_only=True, so locally generated trusted
+            # checkpoints must opt in to the historical loading behavior.
+            save_dict = torch.load(args.load_qmodel_path, weights_only=False)
             model.load_state_dict(save_dict["model"])
             
         elif not args.w_rtn: # GPTQ Weight Quantization
