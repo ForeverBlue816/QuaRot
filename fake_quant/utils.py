@@ -13,6 +13,8 @@ from accelerate.utils import get_balanced_memory
 
 supported_models = [
             'meta-llama/Llama-2-7b-hf',
+            # Weight-compatible public mirror used when the gated Meta repo is unavailable.
+            'NousResearch/llama-2-7b-hf',
             'meta-llama/Llama-2-13b-hf',
             'meta-llama/Llama-2-70b-hf',
             'meta-llama/Meta-Llama-3-8B',
