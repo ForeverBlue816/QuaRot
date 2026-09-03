@@ -5,6 +5,7 @@ import torch
 import os
 import logging
 from tqdm import tqdm
+import gptq_utils
 
 
 @torch.no_grad()
@@ -12,14 +13,9 @@ def evaluator(model, testenc, dev, args):
 
     model.eval()
 
-    if 'opt' in args.model:
-        opt_type = True
-        llama_type = False
-    elif 'meta' in args.model:
-        llama_type = True
-        opt_type = False
-    else:
-        raise ValueError(f'Unknown model {args.model}')
+    model_type = model_utils.get_model_type(model)
+    opt_type = model_type is model_utils.OPT_MODEL
+    llama_type = model_type is model_utils.LLAMA_MODEL
 
 
     use_cache = model.config.use_cache
@@ -92,6 +88,10 @@ def evaluator(model, testenc, dev, args):
     torch.cuda.empty_cache()
     outs = [0] * nbatches
     attention_mask = cache['attention_mask']
+    if llama_type:
+        attention_mask, position_ids = gptq_utils._trim_replay_inputs(
+            attention_mask, position_ids, model.seqlen
+        )
 
     for i in tqdm(range(len(layers)), desc="(Eval) Layers"):
         layer = layers[i].to(dev)
