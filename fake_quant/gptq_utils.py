@@ -15,7 +15,10 @@ def _trim_replay_inputs(attention_mask, position_ids, sequence_length):
     """Match cached Transformers inputs to the GPTQ replay sequence length."""
     if attention_mask is not None:
         if attention_mask.ndim == 4:
-            attention_mask = attention_mask[..., :sequence_length, :sequence_length]
+            # Calibration/evaluation windows have no padding, so the causal
+            # mask is identical for every batch element. Keep one copy and
+            # broadcast it when the final captured batch is smaller.
+            attention_mask = attention_mask[:1, ..., :sequence_length, :sequence_length]
         elif attention_mask.ndim == 2:
             attention_mask = attention_mask[..., :sequence_length]
     if position_ids is not None:
